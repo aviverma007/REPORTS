@@ -1,89 +1,112 @@
 {
   "theme": "light",
-  "archetype": "Swiss & High-Contrast",
+  "archetype": "4 (Swiss & High-Contrast)",
+  "emotional_tone": "Authoritative, Clear, Functional, Data-Driven",
   "typography": {
-    "heading_font": "Cabinet Grotesk",
+    "heading_font": "Chivo",
     "body_font": "IBM Plex Sans",
-    "weights": {
-      "heading": "font-bold",
-      "subheading": "font-medium",
-      "body": "font-normal"
-    },
     "scale": {
-      "h1": "text-4xl tracking-tighter sm:text-5xl lg:text-6xl",
-      "h2": "text-2xl tracking-tight sm:text-3xl lg:text-4xl",
-      "h3": "text-xl sm:text-2xl",
-      "h4": "text-lg sm:text-xl",
-      "body": "text-sm md:text-base leading-relaxed",
-      "label": "text-xs tracking-[0.2em] uppercase font-semibold"
+      "h1": "text-3xl sm:text-4xl tracking-tight font-black",
+      "h2": "text-xl sm:text-2xl tracking-tight font-bold",
+      "h3": "text-lg sm:text-xl font-semibold",
+      "body": "text-sm sm:text-base leading-relaxed",
+      "labels": "text-xs uppercase tracking-[0.1em] font-medium text-slate-500"
     }
   },
-  "colors": {
-    "background": "bg-white",
-    "surface": "bg-zinc-50",
-    "surface_glass": "backdrop-blur-xl bg-white/70 backdrop-saturate-150",
-    "border": "border-zinc-200",
-    "text_primary": "text-zinc-950",
-    "text_secondary": "text-zinc-500",
-    "text_inverse": "text-white",
-    "primary": "bg-black text-white",
-    "data_colors": {
-      "budget": "#2563EB",
-      "ordered": "#D97706",
-      "delivered": "#059669",
-      "invoiced": "#7C3AED",
-      "still_to_deliver": "#E11D48",
-      "monochrome": ["#09090B", "#27272A", "#52525B", "#71717A", "#A1A1AA"]
-    }
+  "color_palette": {
+    "background": "bg-slate-50",
+    "surface": "bg-white",
+    "header_background": "bg-[#0A2540]",
+    "header_text": "text-white",
+    "primary": "bg-[#004DE6]",
+    "primary_hover": "hover:bg-[#0033A0] hover:text-white",
+    "text_main": "text-slate-900",
+    "text_muted": "text-slate-500",
+    "border": "border-slate-200",
+    "status": {
+      "success": "bg-emerald-100 text-emerald-800 border-emerald-200",
+      "warning": "bg-amber-100 text-amber-800 border-amber-200",
+      "error": "bg-rose-100 text-rose-800 border-rose-200",
+      "info": "bg-blue-100 text-blue-800 border-blue-200"
+    },
+    "charts": [
+      "#004DE6",
+      "#16A34A",
+      "#DC2626",
+      "#D97706",
+      "#8B5CF6",
+      "#0EA5E9"
+    ]
   },
   "layout_and_spacing": {
-    "container": "max-w-[1600px] mx-auto",
-    "dashboard_grid": "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6",
-    "padding": "p-6 md:p-8",
-    "radius": "rounded-none md:rounded-lg",
-    "card_style": "border border-zinc-200 bg-white hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300"
+    "grid_system": "The Control Room Grid (grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-4 or gap-6)",
+    "container_padding": "p-6 sm:p-8",
+    "card_radius": "rounded-none md:rounded-sm",
+    "card_border": "border border-slate-200",
+    "card_shadow": "shadow-none",
+    "card_padding": "p-5"
   },
-  "components": {
-    "sidebar": "w-64 border-r border-zinc-200 bg-white/80 backdrop-blur-md sticky top-0 h-screen",
-    "header": "h-16 border-b border-zinc-200 backdrop-blur-xl bg-white/80 sticky top-0 z-50 flex items-center px-6",
-    "button": "bg-zinc-950 text-white hover:bg-zinc-800 transition-colors font-medium rounded-none px-6 py-2 flex items-center gap-2",
-    "kpi_card": "p-6 border border-zinc-200 bg-white flex flex-col gap-2 relative overflow-hidden group hover:border-zinc-300",
-    "charts": "recharts customized with flat colors, 1px stroke for grid lines (#E4E4E7), and no rounded corners on bars",
-    "table": "w-full text-sm text-left. Header: bg-zinc-50 border-y border-zinc-200 text-zinc-500 uppercase tracking-wider font-medium text-xs py-3 px-4. Cells: border-b border-zinc-100 py-3 px-4",
-    "file_upload": "border-2 border-dashed border-zinc-200 bg-zinc-50 hover:border-zinc-400 hover:bg-zinc-100 transition-colors p-12 flex flex-col items-center justify-center text-center gap-4 cursor-pointer"
+  "component_guidelines": {
+    "buttons": "Square or minimally rounded (2px). Solid colors for primary, 1px border for secondary. Always define hover states.",
+    "tables": "Dense, highly scannable. 1px bottom border on rows. No alternating background colors. Left-aligned text, right-aligned numbers. Use Shadcn Table component.",
+    "charts": "Recharts. No grid lines except subtle Y-axis. Custom tooltips with high contrast (black bg, white text).",
+    "sidebar": "Fixed width (280px). 1px right border. Light gray background (bg-slate-50). Contains accordion/collapsible sections for the extensive filter list.",
+    "top_navigation": "Deep blue background (bg-[#0A2540]). Sticky at top. Contains toggle pills (Beyond/Within TAT, etc.) and 'Upload Excel' primary action button.",
+    "kpi_cards": "Use 'The Grid Borders' surface strategy. Subdued borders, massive numbers (text-4xl), and tight labels."
   },
-  "motion": {
-    "hover_state": "transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,0,0,0.06)]",
-    "page_transition": "animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out"
-  },
-  "accessibility": {
-    "contrast_ratio": "Ensure minimum 4.5:1 for all text. Use dark zinc (#09090B) for primary readability.",
-    "focus_state": "focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2",
-    "data_testid": "MANDATORY on all interactive and key data elements (e.g. data-testid='kpi-budget-card', data-testid='upload-submit-btn')"
-  },
-  "media": {
-    "image_urls": {
-      "landing_hero": {
-        "url": "https://images.unsplash.com/photo-1664813953289-7c3350f040e0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBtaW5pbWFsaXN0JTIwYXJjaGl0ZWN0dXJlJTIwd2hpdGV8ZW58MHx8fHwxNzc2MTQ2Mzc1fDA&ixlib=rb-4.1.0&q=85",
-        "category": "Hero Background",
-        "description": "Clean, minimalist white modern architecture. Use as the background for the Landing page with a white glassmorphism overlay."
-      },
-      "abstract_background": {
-        "url": "https://images.pexels.com/photos/3062948/pexels-photo-3062948.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
-        "category": "Auth/Upload Section Background",
-        "description": "Abstract white interior. Perfect for creating a calm, high-end feel in the file upload area or report generation."
-      }
+  "media_and_images": {
+    "avatar_url": {
+      "url": "https://images.pexels.com/photos/32721688/pexels-photo-32721688.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Professional headshot for the user profile dropdown in the top right header."
+    },
+    "logo_strategy": {
+      "instruction": "Use a typographic logo in Chivo font, weight Black, tracking-tighter, combined with a geometric SVG icon (e.g., Lucide Hexagon or Box) inside the deep blue header. No external image needed."
     }
   },
-  "icons": "lucide-react",
+  "structure_and_features": [
+    {
+      "section": "Header (Top Bar)",
+      "components": ["Logo", "Toggle Filters (TAT, 24 Hrs, Inclusion)", "Upload Excel Button", "User Avatar"]
+    },
+    {
+      "section": "Sidebar (Filters)",
+      "components": ["Category", "Sub Category", "Case Type", "Case Status", "Case Owner", "HOD", "Team Leader", "Project"]
+    },
+    {
+      "section": "Main Dashboard - Row 1 (KPIs)",
+      "components": ["Total Tickets", "Open Tickets", "Closed Tickets", "Status Breakdown Mini-Cards"]
+    },
+    {
+      "section": "Main Dashboard - Row 2 (Visuals)",
+      "components": ["Case Type Pie Chart", "Case Origin Horizontal Bar Chart"]
+    },
+    {
+      "section": "Main Dashboard - Row 3 (Secondary Visuals)",
+      "components": ["Cases by Case Owner Bar Chart", "Area/Sub Area Summary Table"]
+    },
+    {
+      "section": "Main Dashboard - Row 4 (Data)",
+      "components": ["Detailed Case Table with Pagination"]
+    }
+  ],
+  "motion_and_interaction": {
+    "hover_states": "Strict contrast shifts. bg-slate-100 to bg-slate-200.",
+    "transitions": "Fast and crisp. transition-all duration-150 ease-in-out.",
+    "loading": "Use skeletal loaders for charts and tables rather than spinners."
+  },
+  "testing_attributes": {
+    "rule": "All interactive elements MUST have data-testid. E.g., data-testid='upload-excel-btn', data-testid='filter-status-select'."
+  },
   "instructions_to_main_agent": [
-    "Install required dependencies: recharts, lucide-react, clsx, tailwind-merge.",
-    "In your HTML/React code, MUST include standard <link> tags to load 'Cabinet Grotesk' (from Fontshare) and 'IBM Plex Sans' (from Google Fonts).",
-    "Build the ZALR Cost Dashboard with an authoritative, data-dense F-pattern layout. Filter sidebar on the left, primary KPIs at the top, followed by interactive charts.",
-    "Apply 'Swiss & High-Contrast' principles: use strict lines, no gradient backgrounds, mostly monochrome (zinc-50 to zinc-950) with high-contrast data accent colors.",
-    "Implement the Excel Drag & Drop Upload section clearly with dashed borders and hover states.",
-    "Add 'data-testid' to EVERY button, input, navigation link, and chart container for testing.",
-    "For Shadcn components, override defaults to remove excessive rounding (use rounded-sm or rounded-none) and remove shadows. Rely on 1px borders instead.",
-    "Render all 8 modules/charts (KPI row, Grouped Bar, Donut, Line, Pie, Stacked Bar, Gauge, and Summary Table) as distinct grid items with p-6."
+    "Build a Next-level Enterprise Dashboard. Do NOT use standard Shadcn borders everywhere; combine cards into a 'Grid Borders' layout where appropriate.",
+    "Implement the Layout with a fixed Sidebar for filters and a scrollable Main Content area.",
+    "Use Lucide-react for all icons.",
+    "Ensure the Header is a deep corporate blue (#0A2540) with white text, adhering to the user's specific request while keeping it premium.",
+    "Use Recharts for the Pie Chart and Horizontal Bar Charts. Ensure tooltips are custom and match the Swiss high-contrast theme.",
+    "The 'Upload Excel' button must be prominently placed in the Header.",
+    "All toggle filters (Beyond/Within TAT, Exclusion/Inclusion) should be stylized as a segmented control (ToggleGroup) in the Header or right below it.",
+    "Generate mock data that realistically reflects case management (e.g., Complaints vs Queries, Walk-in vs Email) to populate the dashboard.",
+    "Install necessary font packages or add them via Google Fonts in index.html (Chivo and IBM Plex Sans).",
+    "Use raw HTML/Tailwind and React.js (.js/.jsx files) for the component structure."
   ]
 }
