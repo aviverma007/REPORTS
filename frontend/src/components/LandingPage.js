@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   Wallet, BarChart3, Factory, TrendingUp, Users,
-  Building2, Receipt, Search, ArrowRight, ChevronDown
+  Building2, Receipt, Search, ArrowRight, ChevronDown, Upload, Check
 } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -27,6 +27,36 @@ export default function LandingPage() {
   const [stats, setStats] = useState(null);
   const [modules, setModules] = useState([]);
   const [comingSoonModule, setComingSoonModule] = useState(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploading, setUploading] = useState(null);
+  const [uploadSuccess, setUploadSuccess] = useState(null);
+
+  const UPLOAD_OPTIONS = [
+    { id: "zalr", label: "ZALR Cost Report", endpoint: `${API}/upload`, accept: ".xlsx,.xls,.csv" },
+    { id: "sales", label: "Sales Report", endpoint: `${API}/sales/upload`, accept: ".xlsx,.xls,.csv" },
+    { id: "cases", label: "Case Management Report", endpoint: `${API}/cases/upload`, accept: ".xlsx,.xls" },
+  ];
+
+  const handleFileUpload = async (opt, file) => {
+    if (!file) return;
+    setUploading(opt.id);
+    setUploadSuccess(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch(opt.endpoint, { method: "POST", body: fd });
+      const result = await res.json();
+      if (res.ok) {
+        setUploadSuccess(opt.id);
+        setTimeout(() => setUploadSuccess(null), 3000);
+      } else {
+        alert(result.detail || "Upload failed");
+      }
+    } catch {
+      alert("Upload failed");
+    }
+    setUploading(null);
+  };
 
   useEffect(() => {
     axios.get(`${API}/stats`).then(r => setStats(r.data)).catch(() => {});
@@ -83,7 +113,42 @@ export default function LandingPage() {
             <div className="text-[9px] text-zinc-400 tracking-[0.14em] uppercase">Analytics Platform</div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 relative">
+          <button
+            data-testid="nav-upload-btn"
+            className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-900 transition-colors tracking-wide uppercase font-medium px-3 py-1.5 border border-zinc-200 hover:border-zinc-400"
+            onClick={() => setUploadOpen(p => !p)}
+          >
+            <Upload className="w-3.5 h-3.5" /> Update Excel <ChevronDown className={`w-3 h-3 transition-transform ${uploadOpen ? "rotate-180" : ""}`} />
+          </button>
+          {uploadOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setUploadOpen(false)} />
+              <div data-testid="upload-dropdown" className="absolute right-0 top-full mt-2 bg-white border border-zinc-200 shadow-lg z-40 w-64">
+                <p className="text-[9px] font-bold tracking-[0.14em] uppercase text-zinc-400 px-4 pt-3 pb-1">Upload report data</p>
+                {UPLOAD_OPTIONS.map(opt => (
+                  <label
+                    key={opt.id}
+                    data-testid={`upload-option-${opt.id}`}
+                    className={`flex items-center gap-2.5 px-4 py-2.5 hover:bg-zinc-50 cursor-pointer transition-colors border-t border-zinc-100 ${uploading === opt.id ? "opacity-50 pointer-events-none" : ""}`}
+                  >
+                    {uploadSuccess === opt.id ? (
+                      <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    ) : (
+                      <Upload className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                    )}
+                    <span className="text-xs text-zinc-700 font-medium">{uploading === opt.id ? "Uploading..." : opt.label}</span>
+                    <input
+                      type="file"
+                      accept={opt.accept}
+                      className="hidden"
+                      onChange={e => { handleFileUpload(opt, e.target.files?.[0]); e.target.value = ""; }}
+                    />
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </nav>
 
