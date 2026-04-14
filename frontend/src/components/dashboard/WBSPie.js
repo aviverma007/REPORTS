@@ -19,7 +19,7 @@ export default function WBSPie({ data }) {
         <span className="text-[8px] font-bold tracking-[0.1em] uppercase px-2 py-0.5 bg-zinc-100 border border-zinc-200 text-zinc-400">PIE</span>
       </div>
       <div style={{ height: 220 }} data-testid="wbs-pie-chart">
-        <ResponsiveContainer>
+        <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie data={chartData} cx="50%" cy="50%" outerRadius={90} dataKey="value" stroke="#fff" strokeWidth={2}>
               {chartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}

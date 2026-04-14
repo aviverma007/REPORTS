@@ -27,7 +27,7 @@ export default function WBSBar({ data, budgets }) {
         <span className="text-[8px] font-bold tracking-[0.1em] uppercase px-2 py-0.5 bg-zinc-100 border border-zinc-200 text-zinc-400">GROUPED BAR</span>
       </div>
       <div style={{ height: 240 }} data-testid="wbs-bar-chart">
-        <ResponsiveContainer>
+        <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} barGap={1}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E4E4E7" />
             <XAxis dataKey="name" tick={{ fontSize: 8, fill: "#71717A" }} angle={-30} textAnchor="end" height={50} />

@@ -298,7 +298,7 @@ async def upload_excel(file: UploadFile = File(...)):
 
     # Save backup of current file
     if ZALR_FILE.exists():
-        backup = DATA_DIR / f'ZALR_backup.xlsx'
+        backup = DATA_DIR / 'ZALR_backup.xlsx'
         shutil.copy2(ZALR_FILE, backup)
 
     if file.filename.endswith('.csv'):

@@ -51,7 +51,7 @@ export default function ProjectCompare({ kpi }) {
       </div>
 
       <div style={{ height: 180 }} data-testid="project-compare-chart">
-        <ResponsiveContainer>
+        <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} barGap={2}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E4E4E7" />
             <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#71717A" }} />

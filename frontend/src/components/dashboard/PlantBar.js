@@ -20,7 +20,7 @@ export default function PlantBar({ data }) {
         <span className="text-[8px] font-bold tracking-[0.1em] uppercase px-2 py-0.5 bg-zinc-100 border border-zinc-200 text-zinc-400">BAR</span>
       </div>
       <div style={{ height: 220 }} data-testid="plant-bar-chart">
-        <ResponsiveContainer>
+        <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} barGap={1}>
             <CartesianGrid strokeDasharray="3 3" stroke="#E4E4E7" />
             <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#71717A" }} />

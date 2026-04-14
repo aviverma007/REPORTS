@@ -20,7 +20,7 @@ export default function PendingDonut({ kpi }) {
         <span className="text-[8px] font-bold tracking-[0.1em] uppercase px-2 py-0.5 bg-zinc-100 border border-zinc-200 text-zinc-400">DONUT</span>
       </div>
       <div style={{ height: 200 }} data-testid="pending-donut-chart">
-        <ResponsiveContainer>
+        <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie data={items} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" stroke="none">
               {items.map((entry, i) => <Cell key={i} fill={entry.color} />)}
