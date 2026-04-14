@@ -74,7 +74,6 @@ def read_zalr_excel():
         # Map new columns to the normalized names used by all endpoints
         rows = []
         budgets = {}
-        seen_wbs = {}
 
         def safe_num(v):
             if v is None:
@@ -135,11 +134,10 @@ def read_zalr_excel():
             }
             rows.append(mapped)
 
-            # Build budgets from Budget column (use first seen per WBS)
-            if wbs_key and wbs_key not in seen_wbs:
-                seen_wbs[wbs_key] = True
+            # Build budgets from Budget column (use max value per WBS)
+            if wbs_key:
                 bud_val = safe_num(d.get('Budget'))
-                if bud_val:
+                if bud_val and (wbs_key not in budgets or bud_val > budgets[wbs_key]):
                     budgets[wbs_key] = bud_val
 
     wb.close()
@@ -149,20 +147,38 @@ def read_zalr_excel():
     return rows, budgets
 
 
+PLANT_NAMES = {
+    "1000": "SWD One DXP-Ph1 Res.", "1010": "SmartWorld Developer", "1011": "SWD OneDXP-Ph2 Stret",
+    "1012": "One DXP-Commercial", "1013": "SWD One DXP-Ph2 Res.", "1014": "One DXP Phase-5",
+    "1015": "One DXP Sales Gallery", "1070": "Riverday Resi.-69", "1071": "Riverday Retail-69",
+    "1072": "Trump Tower", "1073": "IFC 11th Floor", "1074": "Lead Apartment-Trump",
+    "1090": "Anuvridhi Head Offc.", "2000": "Smartworld Heights", "2010": "ETSY Developer P.Ltd",
+    "2011": "SWD Central Office", "2012": "Sales Gallery", "2070": "Manesar M11-HO",
+    "2071": "Manesar M11-Projec", "2072": "Manesar M11-Commer.", "2080": "Topshelf Builders Re",
+    "3010": "Glorii Education-HO", "3070": "Sector 98 Noida HO", "3071": "SWD Residencies",
+    "3072": "SWD Le Courtyard", "3073": "Smartworld Suites", "3074": "Sector 98 Noida SGE",
+}
+
+
 def process_data(rows, budgets, plant=None, wbs=None, po=None, proj_type=None, year=None, month=None):
     filtered = rows
     if plant:
-        filtered = [r for r in filtered if str(r.get('Plant', '')) == plant]
+        plant_set = set(plant.split(','))
+        filtered = [r for r in filtered if str(r.get('Plant', '')) in plant_set]
     if wbs:
-        filtered = [r for r in filtered if r.get('WBS Element', '') == wbs]
+        wbs_set = set(wbs.split(','))
+        filtered = [r for r in filtered if r.get('WBS Element', '') in wbs_set]
     if po:
-        filtered = [r for r in filtered if str(r.get('Purchasing Document', '')) == po]
+        po_set = set(po.split(','))
+        filtered = [r for r in filtered if str(r.get('Purchasing Document', '')) in po_set]
     if proj_type:
         filtered = [r for r in filtered if r.get('Project/Non-Project', '') == proj_type]
     if year:
-        filtered = [r for r in filtered if str(r.get('Year', '')) == str(year)]
+        year_set = set(year.split(','))
+        filtered = [r for r in filtered if str(r.get('Year', '')) in year_set]
     if month:
-        filtered = [r for r in filtered if str(r.get('Month', '')) == str(month)]
+        month_set = set(month.split(','))
+        filtered = [r for r in filtered if str(r.get('Month', '')) in month_set]
     return filtered
 
 
@@ -332,7 +348,13 @@ async def get_data(
 @api_router.get("/filters")
 async def get_filters():
     rows, budgets = read_zalr_excel()
-    plants = sorted(set(str(r.get('Plant', '')) for r in rows if r.get('Plant')))
+    plant_codes = sorted(set(str(r.get('Plant', '')) for r in rows if r.get('Plant')))
+    plants_with_names = []
+    for p in plant_codes:
+        name = PLANT_NAMES.get(p, '')
+        label = f"{p} — {name}" if name else p
+        plants_with_names.append({"value": p, "label": label})
+
     wbs_list = sorted(set(r.get('WBS Element', '') for r in rows if r.get('WBS Element')))
     wbs_with_desc = []
     desc_map = {}
@@ -341,13 +363,13 @@ async def get_filters():
         if w and w not in desc_map:
             desc_map[w] = r.get('WBS Description', '')
     for w in wbs_list:
-        wbs_with_desc.append({"value": w, "label": f"{w} — {(desc_map.get(w, '') or '')[:20]}"})
+        wbs_with_desc.append({"value": w, "label": f"{w} — {(desc_map.get(w, '') or '')[:30]}"})
 
     pos = sorted(set(str(r.get('Purchasing Document', '')) for r in rows if r.get('Purchasing Document')))[:600]
     years = sorted(set(str(int(r.get('Year'))) for r in rows if r.get('Year') is not None))
 
     return {
-        "plants": plants,
+        "plants": plants_with_names,
         "wbs_elements": wbs_with_desc,
         "purchasing_documents": pos,
         "years": years

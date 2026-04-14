@@ -23,24 +23,24 @@ export default function Dashboard() {
   const [filters, setFilters] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Filter state
-  const [plant, setPlant] = useState("");
-  const [wbs, setWbs] = useState("");
-  const [po, setPo] = useState("");
+  // Filter state — arrays for multi-select
+  const [plant, setPlant] = useState([]);
+  const [wbs, setWbs] = useState([]);
+  const [po, setPo] = useState([]);
   const [projType, setProjType] = useState("");
-  const [year, setYear] = useState("");
-  const [month, setMonth] = useState("");
+  const [year, setYear] = useState([]);
+  const [month, setMonth] = useState([]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const params = {};
-      if (plant) params.plant = plant;
-      if (wbs) params.wbs = wbs;
-      if (po) params.po = po;
+      if (plant.length) params.plant = plant.join(',');
+      if (wbs.length) params.wbs = wbs.join(',');
+      if (po.length) params.po = po.join(',');
       if (projType) params.proj_type = projType;
-      if (year) params.year = year;
-      if (month) params.month = month;
+      if (year.length) params.year = year.join(',');
+      if (month.length) params.month = month.join(',');
       const res = await axios.get(`${API}/data`, { params });
       setData(res.data);
     } catch (e) {
@@ -63,7 +63,7 @@ export default function Dashboard() {
   useEffect(() => { fetchData(); }, [plant, wbs, po, projType, year, month]); // eslint-disable-line
 
   const resetFilters = () => {
-    setPlant(""); setWbs(""); setPo(""); setProjType(""); setYear(""); setMonth("");
+    setPlant([]); setWbs([]); setPo([]); setProjType(""); setYear([]); setMonth([]);
   };
 
   const MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -105,30 +105,20 @@ export default function Dashboard() {
         <div className="px-3 pt-4 flex-1">
           <div className="text-[8px] font-bold tracking-[0.18em] uppercase text-zinc-400 mb-3 px-1">Filters</div>
 
-          <FilterSelect icon={Building} label="Plant" value={plant} onChange={setPlant} testId="filter-plant">
-            <option value="">All Plants</option>
-            {filters?.plants?.map(p => <option key={p} value={p}>Plant {p}</option>)}
-          </FilterSelect>
+          <MultiSelect icon={Building} label="Plant" selected={plant} onChange={setPlant} testId="filter-plant"
+            options={(filters?.plants || []).map(p => ({ value: p.value, label: p.label }))} />
 
-          <FilterSelect icon={Layers} label="WBS Element" value={wbs} onChange={setWbs} testId="filter-wbs">
-            <option value="">All WBS</option>
-            {filters?.wbs_elements?.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
-          </FilterSelect>
+          <MultiSelect icon={Layers} label="WBS Element" selected={wbs} onChange={setWbs} testId="filter-wbs"
+            options={(filters?.wbs_elements || []).map(w => ({ value: w.value, label: w.label }))} />
 
-          <FilterSelect icon={FileText} label="Purchasing Document" value={po} onChange={setPo} testId="filter-po">
-            <option value="">All POs</option>
-            {filters?.purchasing_documents?.map(p => <option key={p} value={p}>{p}</option>)}
-          </FilterSelect>
+          <MultiSelect icon={FileText} label="Purchasing Document" selected={po} onChange={setPo} testId="filter-po"
+            options={(filters?.purchasing_documents || []).map(p => ({ value: p, label: p }))} />
 
-          <FilterSelect icon={Calendar} label="Year" value={year} onChange={setYear} testId="filter-year">
-            <option value="">All Years</option>
-            {filters?.years?.map(y => <option key={y} value={y}>{y}</option>)}
-          </FilterSelect>
+          <MultiSelect icon={Calendar} label="Year" selected={year} onChange={setYear} testId="filter-year"
+            options={(filters?.years || []).map(y => ({ value: y, label: y }))} />
 
-          <FilterSelect icon={CalendarDays} label="Month" value={month} onChange={setMonth} testId="filter-month">
-            <option value="">All Months</option>
-            {MONTHS.slice(1).map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
-          </FilterSelect>
+          <MultiSelect icon={CalendarDays} label="Month" selected={month} onChange={setMonth} testId="filter-month"
+            options={MONTHS.slice(1).map((m, i) => ({ value: String(i + 1), label: m }))} />
 
           <button
             data-testid="filter-reset-btn"
@@ -226,22 +216,81 @@ export default function Dashboard() {
   );
 }
 
-function FilterSelect({ icon: Icon, label, value, onChange, children, testId }) {
+function MultiSelect({ icon: Icon, label, selected, onChange, options, testId }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const toggle = (val) => {
+    if (selected.includes(val)) onChange(selected.filter(v => v !== val));
+    else onChange([...selected, val]);
+  };
+
+  const filtered = search
+    ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
+    : options;
+
   return (
-    <div className="mb-3">
+    <div className="mb-3 relative">
       <div className="flex items-center gap-1.5 mb-1.5">
         <Icon className="w-3 h-3 text-zinc-400" />
         <span className="text-[9px] font-semibold tracking-[0.1em] uppercase text-zinc-400">{label}</span>
       </div>
-      <select
+      <button
         data-testid={testId}
-        className="w-full bg-zinc-50 border border-zinc-200 py-1.5 px-2 text-xs text-zinc-700 outline-none focus:border-zinc-400 transition-colors appearance-none cursor-pointer"
-        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5'%3E%3Cpath d='M0 0l4.5 5L9 0z' fill='%23A1A1AA'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
-        value={value}
-        onChange={e => onChange(e.target.value)}
+        onClick={() => setOpen(p => !p)}
+        className="w-full bg-zinc-50 border border-zinc-200 py-1.5 px-2 text-xs text-zinc-700 text-left transition-colors hover:border-zinc-400 flex items-center justify-between"
       >
-        {children}
-      </select>
+        <span className="truncate">
+          {selected.length === 0
+            ? `All ${label}`
+            : selected.length === 1
+              ? (options.find(o => o.value === selected[0])?.label || selected[0])
+              : `${selected.length} selected`}
+        </span>
+        <svg className={`w-3 h-3 text-zinc-400 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`} viewBox="0 0 9 5"><path d="M0 0l4.5 5L9 0z" fill="currentColor" /></svg>
+      </button>
+      {selected.length > 0 && (
+        <button
+          className="absolute top-0 right-0 text-[8px] text-blue-500 hover:underline"
+          onClick={() => onChange([])}
+        >clear</button>
+      )}
+      {open && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => { setOpen(false); setSearch(""); }} />
+          <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-zinc-200 shadow-lg max-h-56 overflow-hidden flex flex-col">
+            {options.length > 8 && (
+              <input
+                type="text"
+                placeholder="Search..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="border-b border-zinc-100 px-2 py-1.5 text-[11px] outline-none bg-zinc-50"
+                autoFocus
+              />
+            )}
+            <div className="overflow-y-auto flex-1">
+              {filtered.map(o => (
+                <label
+                  key={o.value}
+                  className="flex items-center gap-2 px-2 py-1 hover:bg-zinc-50 cursor-pointer text-[11px] text-zinc-700"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(o.value)}
+                    onChange={() => toggle(o.value)}
+                    className="w-3 h-3 rounded-sm accent-blue-600"
+                  />
+                  <span className="truncate">{o.label}</span>
+                </label>
+              ))}
+              {filtered.length === 0 && (
+                <div className="px-2 py-2 text-[10px] text-zinc-400">No results</div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
