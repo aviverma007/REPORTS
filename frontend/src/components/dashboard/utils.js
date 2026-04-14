@@ -1,19 +1,20 @@
 export function fCr(v) {
   if (!v && v !== 0) return "—";
   const c = v / 1e7;
-  if (c >= 1000) return Math.round(c / 100) * 100 + " Cr";
-  if (c >= 100) return Math.round(c) + " Cr";
-  if (c >= 1) return c.toFixed(1) + " Cr";
-  if (v / 1e5 >= 1) return (v / 1e5).toFixed(1) + " L";
-  return (v / 1000).toFixed(1) + " K";
+  if (c >= 1000) return c.toFixed(1) + " Cr";
+  if (c >= 100) return c.toFixed(2) + " Cr";
+  if (c >= 1) return c.toFixed(2) + " Cr";
+  if (v / 1e5 >= 1) return (v / 1e5).toFixed(2) + " L";
+  return (v / 1000).toFixed(2) + " K";
 }
 
 export function fShort(v) {
   if (!v && v !== 0) return "0";
   const c = v / 1e7;
-  if (c >= 1) return c.toFixed(1) + "Cr";
-  if (v / 1e5 >= 1) return (v / 1e5).toFixed(0) + "L";
-  return (v / 1000).toFixed(0) + "K";
+  if (c >= 100) return c.toFixed(1) + "Cr";
+  if (c >= 1) return c.toFixed(2) + "Cr";
+  if (v / 1e5 >= 1) return (v / 1e5).toFixed(1) + "L";
+  return (v / 1000).toFixed(1) + "K";
 }
 
 export const COLORS = {
