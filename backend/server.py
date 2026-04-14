@@ -28,29 +28,124 @@ def ensure_seed_data():
         generate_seed_excel()
 
 
+# Cache for ZALR data
+_zalr_cache = {"rows": None, "budgets": None, "mtime": 0}
+
+
 def read_zalr_excel():
     ensure_seed_data()
+    mtime = ZALR_FILE.stat().st_mtime
+    if _zalr_cache["rows"] is not None and _zalr_cache["mtime"] == mtime:
+        return _zalr_cache["rows"], _zalr_cache["budgets"]
+
     wb = openpyxl.load_workbook(ZALR_FILE, read_only=True, data_only=True)
+    sheet_names = wb.sheetnames
 
-    # Read main data sheet
-    ws = wb['ZALR_Data']
-    headers = [cell.value for cell in next(ws.iter_rows(min_row=1, max_row=1))]
-    rows = []
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        row_dict = {}
-        for i, val in enumerate(row):
-            if i < len(headers):
-                row_dict[headers[i]] = val
-        rows.append(row_dict)
+    # Detect format: old (ZALR_Data + WBS_Budget) vs new (Sheet1 with all columns)
+    if 'ZALR_Data' in sheet_names:
+        # OLD FORMAT
+        ws = wb['ZALR_Data']
+        headers = [cell.value for cell in next(ws.iter_rows(min_row=1, max_row=1))]
+        rows = []
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            row_dict = {}
+            for i, val in enumerate(row):
+                if i < len(headers):
+                    row_dict[headers[i]] = val
+            rows.append(row_dict)
+        budgets = {}
+        if 'WBS_Budget' in sheet_names:
+            ws2 = wb['WBS_Budget']
+            for row in ws2.iter_rows(min_row=2, values_only=True):
+                if row[0]:
+                    budgets[str(row[0])] = row[2] or 0
+    else:
+        # NEW FORMAT - single sheet with columns like WBS, Plant_WBS, Budget, etc.
+        ws = wb[sheet_names[0]]
+        headers = [cell.value for cell in next(ws.iter_rows(min_row=1, max_row=1))]
+        raw_rows = []
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            d = {}
+            for i, val in enumerate(row):
+                if i < len(headers) and headers[i]:
+                    d[headers[i]] = val
+            raw_rows.append(d)
 
-    # Read budget sheet
-    ws2 = wb['WBS_Budget']
-    budgets = {}
-    for row in ws2.iter_rows(min_row=2, values_only=True):
-        if row[0]:
-            budgets[str(row[0])] = row[2] or 0
+        # Map new columns to the normalized names used by all endpoints
+        rows = []
+        budgets = {}
+        seen_wbs = {}
+
+        def safe_num(v):
+            if v is None:
+                return 0
+            if isinstance(v, (int, float)):
+                return v
+            try:
+                return float(str(v).replace(',', ''))
+            except (ValueError, TypeError):
+                return 0
+
+        for d in raw_rows:
+            import datetime
+            doc_date = d.get('Document Date')
+            yr, mo = None, None
+            if isinstance(doc_date, datetime.datetime):
+                yr = doc_date.year
+                mo = doc_date.month
+            elif isinstance(doc_date, str) and doc_date:
+                try:
+                    from datetime import datetime as dt
+                    parsed = dt.strptime(doc_date.split(' ')[0], '%Y-%m-%d')
+                    yr, mo = parsed.year, parsed.month
+                except Exception:
+                    pass
+
+            ordered_gst = safe_num(d.get('Ordered with GST'))
+            invoiced = safe_num(d.get('Invoiced Value'))
+            still_del = safe_num(d.get('Still to be Delivered Value'))
+            actual = safe_num(d.get('Actual PO Value'))
+            still_inv = max(0, ordered_gst - invoiced)
+
+            wbs_key = d.get('WBS', '') or ''
+
+            mapped = {
+                'WBS Element': wbs_key,
+                'WBS Description': d.get('WBS Description', ''),
+                'Plant': str(d.get('Plant_WBS', '') or ''),
+                'Plant Name': d.get('Plant Name', ''),
+                'Purchasing Document': d.get('Purchasing Document', ''),
+                'Project/Non-Project': d.get('Project/Non-Project', ''),
+                'Ordered with GST': ordered_gst,
+                'Delivered with GST': actual,
+                'Invoiced with GST': invoiced,
+                'Still to Deliver GST': still_del,
+                'Still to Invoice': still_inv,
+                'Year': yr,
+                'Month': mo,
+                'Budget': safe_num(d.get('Budget')),
+                'Vendor Name': d.get('Vendor Name', ''),
+                'Net Price': safe_num(d.get('Net Price')),
+                'Ordered Value': safe_num(d.get('Ordered Value')),
+                'Document Date': doc_date,
+                'Short Text': d.get('Short Text', ''),
+                'Document Type': d.get('Document Type', ''),
+                'Profit Center': d.get('Profit Center', ''),
+                'Business Area': d.get('Business Area', ''),
+            }
+            rows.append(mapped)
+
+            # Build budgets from Budget column (use first seen per WBS)
+            if wbs_key and wbs_key not in seen_wbs:
+                seen_wbs[wbs_key] = True
+                bud_val = safe_num(d.get('Budget'))
+                if bud_val:
+                    budgets[wbs_key] = bud_val
 
     wb.close()
+    _zalr_cache["rows"] = rows
+    _zalr_cache["budgets"] = budgets
+    _zalr_cache["mtime"] = mtime
     return rows, budgets
 
 
@@ -249,7 +344,7 @@ async def get_filters():
         wbs_with_desc.append({"value": w, "label": f"{w} — {(desc_map.get(w, '') or '')[:20]}"})
 
     pos = sorted(set(str(r.get('Purchasing Document', '')) for r in rows if r.get('Purchasing Document')))[:600]
-    years = sorted(set(str(int(r.get('Year'))) for r in rows if r.get('Year')))
+    years = sorted(set(str(int(r.get('Year'))) for r in rows if r.get('Year') is not None))
 
     return {
         "plants": plants,
@@ -297,56 +392,39 @@ async def upload_excel(file: UploadFile = File(...)):
     if not file.filename.endswith(('.xlsx', '.xls', '.csv')):
         raise HTTPException(status_code=400, detail="Only .xlsx, .xls, .csv files are accepted")
 
-    # Save backup of current file
     if ZALR_FILE.exists():
         backup = DATA_DIR / 'ZALR_backup.xlsx'
         shutil.copy2(ZALR_FILE, backup)
 
-    if file.filename.endswith('.csv'):
-        import pandas as pd
-        import io
-        contents = await file.read()
-        df = pd.read_csv(io.BytesIO(contents))
-        df.to_excel(ZALR_FILE, sheet_name='ZALR_Data', index=False)
-        # Create budget sheet from data
-        wb = openpyxl.load_workbook(ZALR_FILE)
-        ws2 = wb.create_sheet('WBS_Budget')
-        ws2.append(['WBS Element', 'WBS Description', 'Budget'])
-        seen = set()
-        for _, row in df.iterrows():
-            w = row.get('WBS Element', '')
-            if w and w not in seen:
-                seen.add(w)
-                ws2.append([w, row.get('WBS Description', ''), 0])
-        wb.save(ZALR_FILE)
-    else:
-        contents = await file.read()
-        temp_path = DATA_DIR / 'temp_upload.xlsx'
-        with open(temp_path, 'wb') as f:
-            f.write(contents)
+    contents = await file.read()
+    temp_path = DATA_DIR / 'temp_upload.xlsx'
+    with open(temp_path, 'wb') as f:
+        f.write(contents)
 
-        # Validate the file
-        try:
-            wb = openpyxl.load_workbook(temp_path, read_only=True)
-            sheet_names = wb.sheetnames
-            if 'ZALR_Data' not in sheet_names:
-                first_sheet = wb[sheet_names[0]]
-                headers = [cell.value for cell in next(first_sheet.iter_rows(min_row=1, max_row=1))]
-                required = ['Plant', 'WBS Element']
-                for req in required:
-                    if req not in headers:
-                        wb.close()
-                        temp_path.unlink()
-                        raise HTTPException(status_code=400, detail=f"Missing required column: {req}")
+    try:
+        wb = openpyxl.load_workbook(temp_path, read_only=True)
+        sheet_names = wb.sheetnames
+        first_sheet = wb[sheet_names[0]]
+        headers = [cell.value for cell in next(first_sheet.iter_rows(min_row=1, max_row=1))]
+        # Accept either old format (WBS Element, Plant) or new format (WBS, Plant_WBS)
+        has_old = 'WBS Element' in headers and 'Plant' in headers
+        has_new = 'WBS' in headers
+        if not has_old and not has_new:
             wb.close()
-        except HTTPException:
-            raise
-        except Exception as e:
-            if temp_path.exists():
-                temp_path.unlink()
-            raise HTTPException(status_code=400, detail=f"Invalid Excel file: {str(e)}")
+            temp_path.unlink()
+            raise HTTPException(status_code=400, detail="Missing required columns: need 'WBS' or 'WBS Element'")
+        wb.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        if temp_path.exists():
+            temp_path.unlink()
+        raise HTTPException(status_code=400, detail=f"Invalid Excel file: {str(e)}")
 
-        shutil.move(str(temp_path), str(ZALR_FILE))
+    shutil.move(str(temp_path), str(ZALR_FILE))
+    # Invalidate cache
+    _zalr_cache["rows"] = None
+    _zalr_cache["mtime"] = 0
 
     rows, budgets = read_zalr_excel()
     return {"message": "File uploaded successfully", "rows_count": len(rows)}
