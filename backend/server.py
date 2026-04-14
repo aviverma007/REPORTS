@@ -183,14 +183,36 @@ def process_data(rows, budgets, plant=None, wbs=None, po=None, proj_type=None, y
 
 
 def aggregate(rows_list):
-    ordered = sum(r.get('Ordered with GST', 0) or 0 for r in rows_list)
-    delivered = sum(r.get('Delivered with GST', 0) or 0 for r in rows_list)
-    invoiced = sum(r.get('Invoiced with GST', 0) or 0 for r in rows_list)
-    still_inv = sum(r.get('Still to Invoice', 0) or 0 for r in rows_list)
-    still_del = sum(r.get('Still to Deliver GST', 0) or 0 for r in rows_list)
+    wbs_map = {}
+
+    for r in rows_list:
+        w = r.get('WBS Element')
+        if not w:
+            continue
+
+        if w not in wbs_map:
+            wbs_map[w] = {
+                "ordered": 0,
+                "delivered": 0,
+                "invoiced": 0,
+                "still_to_invoice": 0,
+                "still_to_deliver": 0
+            }
+
+        # Group all rows under same WBS
+        wbs_map[w]["ordered"] += r.get('Ordered with GST', 0) or 0
+        wbs_map[w]["delivered"] += r.get('Delivered with GST', 0) or 0
+        wbs_map[w]["invoiced"] += r.get('Invoiced with GST', 0) or 0
+        wbs_map[w]["still_to_invoice"] += r.get('Still to Invoice', 0) or 0
+        wbs_map[w]["still_to_deliver"] += r.get('Still to Deliver GST', 0) or 0
+
+    # Final totals (each WBS counted once)
     return {
-        "ordered": ordered, "delivered": delivered, "invoiced": invoiced,
-        "still_to_invoice": still_inv, "still_to_deliver": still_del
+        "ordered": sum(v["ordered"] for v in wbs_map.values()),
+        "delivered": sum(v["delivered"] for v in wbs_map.values()),
+        "invoiced": sum(v["invoiced"] for v in wbs_map.values()),
+        "still_to_invoice": sum(v["still_to_invoice"] for v in wbs_map.values()),
+        "still_to_deliver": sum(v["still_to_deliver"] for v in wbs_map.values())
     }
 
 
