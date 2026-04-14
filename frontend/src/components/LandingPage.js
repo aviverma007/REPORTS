@@ -84,12 +84,6 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button data-testid="nav-upload-btn" className="text-xs text-zinc-500 hover:text-zinc-900 transition-colors tracking-wide uppercase font-medium px-3 py-1.5 border border-zinc-200 hover:border-zinc-400" onClick={() => nav("/upload")}>
-            Update Excel
-          </button>
-          <button data-testid="nav-reports-btn" className="bg-zinc-950 text-white text-xs tracking-widest uppercase font-semibold px-4 py-1.5 hover:bg-zinc-800 transition-colors" onClick={() => nav("/dashboard")}>
-            Dashboard
-          </button>
         </div>
       </nav>
 
@@ -127,25 +121,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stats Bar */}
-      {stats && (
-        <section className="border-y border-zinc-200 bg-white" data-testid="stats-bar">
-          <div className="max-w-6xl mx-auto flex justify-center flex-wrap divide-x divide-zinc-200">
-            {[
-              { num: stats.wbs_elements, label: "WBS Elements" },
-              { num: stats.purchase_orders?.toLocaleString(), label: "Purchase Orders" },
-              { num: `₹${fCr(stats.total_budget)}`, label: "Total Budget" },
-              { num: stats.plants, label: "Plants" },
-              { num: stats.report_modules, label: "Report Modules" },
-            ].map((s, i) => (
-              <div key={i} className="px-10 py-7 text-center" data-testid={`stat-item-${i}`}>
-                <div className="text-2xl font-bold tracking-tight text-zinc-950" style={{ fontFamily: 'var(--font-heading)' }}>{s.num}</div>
-                <div className="text-[9px] font-semibold tracking-[0.14em] uppercase text-zinc-400 mt-1">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Stats Bar removed */}
 
       {/* Reports Section */}
       <section id="reports-section" className="py-20 px-6" data-testid="reports-section">
