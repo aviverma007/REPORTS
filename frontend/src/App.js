@@ -5,6 +5,7 @@ import LandingPage from "@/components/LandingPage";
 import Dashboard from "@/components/Dashboard";
 import UploadPage from "@/components/UploadPage";
 import SalesDashboard from "@/components/SalesDashboard";
+import CaseManagement from "@/components/CaseManagement";
 
 function App() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -17,6 +18,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<Dashboard key={refreshKey} />} />
           <Route path="/sales" element={<SalesDashboard />} />
+          <Route path="/cases" element={<CaseManagement />} />
           <Route path="/upload" element={<UploadPage onDataUpdated={onDataUpdated} />} />
         </Routes>
       </BrowserRouter>

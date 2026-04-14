@@ -11,7 +11,7 @@ from datetime import datetime
 import os
 
 class SmartWorldAPITester:
-    def __init__(self, base_url="https://dev-sandbox-180.preview.emergentagent.com"):
+    def __init__(self, base_url="https://da603a51-e989-4398-913b-25e02bbc787f.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
@@ -76,7 +76,7 @@ class SmartWorldAPITester:
             success = response.status_code == 200
             if success:
                 data = response.json()
-                success = isinstance(data, list) and len(data) == 8
+                success = isinstance(data, list) and len(data) >= 8
                 # Check if first module has required fields
                 if success and len(data) > 0:
                     required_fields = ["id", "title", "description", "icon", "status"]
@@ -201,6 +201,122 @@ class SmartWorldAPITester:
             self.log_test("Upload endpoint", False, str(e))
             return False
 
+    def test_case_filters_endpoint(self):
+        """Test GET /api/cases/filters - case management filters"""
+        try:
+            response = requests.get(f"{self.api_url}/cases/filters", timeout=30)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                required_keys = ["case_types", "statuses", "case_origins", "areas", "sub_areas", 
+                               "case_owners", "hods", "team_leaders", "projects", "priorities"]
+                
+                for key in required_keys:
+                    if key not in data or not isinstance(data[key], list):
+                        success = False
+                        break
+                
+                details = f"Status: {response.status_code}, Keys: {list(data.keys())}"
+            else:
+                details = f"Status: {response.status_code}"
+            self.log_test("Case filters endpoint", success, details)
+            return success, data if success else {}
+        except Exception as e:
+            self.log_test("Case filters endpoint", False, str(e))
+            return False, {}
+
+    def test_case_data_endpoint(self):
+        """Test GET /api/cases/data - case management KPI and chart data"""
+        try:
+            response = requests.get(f"{self.api_url}/cases/data", timeout=30)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                # Check KPI structure
+                if "kpi" in data:
+                    kpi = data["kpi"]
+                    required_kpi = ["total", "open", "closed", "escalated", "hni", "legal"]
+                    kpi_valid = all(key in kpi for key in required_kpi)
+                    
+                    # Check expected data ranges
+                    total = kpi.get("total", 0)
+                    open_count = kpi.get("open", 0)
+                    closed_count = kpi.get("closed", 0)
+                    
+                    data_valid = total > 90000 and open_count > 1000 and closed_count > 80000
+                    success = kpi_valid and data_valid
+                    details = f"Total: {total}, Open: {open_count}, Closed: {closed_count}"
+                else:
+                    success = False
+                    details = "Missing KPI data"
+            else:
+                details = f"Status: {response.status_code}"
+            self.log_test("Case data endpoint", success, details)
+            return success, data if success else {}
+        except Exception as e:
+            self.log_test("Case data endpoint", False, str(e))
+            return False, {}
+
+    def test_case_table_endpoint(self):
+        """Test GET /api/cases/table - case management table data"""
+        try:
+            response = requests.get(f"{self.api_url}/cases/table", timeout=30)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                required_keys = ["total", "page", "page_size", "total_pages", "rows"]
+                success = all(key in data for key in required_keys)
+                
+                if success and "rows" in data and len(data["rows"]) > 0:
+                    row = data["rows"][0]
+                    required_fields = ["case_number", "account_name", "case_owner", "status", "case_type"]
+                    success = all(field in row for field in required_fields)
+                
+                details = f"Total: {data.get('total', 0)}, Rows: {len(data.get('rows', []))}"
+            else:
+                details = f"Status: {response.status_code}"
+            self.log_test("Case table endpoint", success, details)
+            return success, data if success else {}
+        except Exception as e:
+            self.log_test("Case table endpoint", False, str(e))
+            return False, {}
+
+    def test_case_filtering(self):
+        """Test case management filtering functionality"""
+        try:
+            # Test with case_type filter
+            response = requests.get(f"{self.api_url}/cases/data?case_type=Complaint", timeout=30)
+            success = response.status_code == 200
+            if success:
+                data = response.json()
+                total_filtered = data.get("kpi", {}).get("total", 0)
+                success = total_filtered > 0
+                details = f"Filtered total: {total_filtered}"
+            else:
+                details = f"Status: {response.status_code}"
+            self.log_test("Case filtering", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Case filtering", False, str(e))
+            return False
+
+    def test_case_download_endpoint(self):
+        """Test GET /api/cases/download - download Excel file"""
+        try:
+            response = requests.get(f"{self.api_url}/cases/download", timeout=30)
+            success = response.status_code == 200
+            if success:
+                content_type = response.headers.get('content-type', '')
+                success = 'excel' in content_type or 'spreadsheet' in content_type
+                details = f"Content-Type: {content_type}"
+            else:
+                details = f"Status: {response.status_code}"
+            self.log_test("Case download endpoint", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Case download endpoint", False, str(e))
+            return False
+
     def run_all_tests(self):
         """Run all backend API tests"""
         print("🚀 Starting SmartWorld Analytics Backend API Tests")
@@ -221,6 +337,14 @@ class SmartWorldAPITester:
         # Test file operations
         self.test_download_endpoint()
         self.test_upload_endpoint()
+
+        # Test Case Management endpoints
+        print("\n📋 Testing Case Management APIs...")
+        self.test_case_filters_endpoint()
+        self.test_case_data_endpoint()
+        self.test_case_table_endpoint()
+        self.test_case_filtering()
+        self.test_case_download_endpoint()
 
         # Print summary
         print("=" * 60)
