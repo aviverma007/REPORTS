@@ -1,53 +1,52 @@
-# SmartWorld Developers Analytics Portal - PRD
+# SmartWorld Analytics - PRD
 
 ## Original Problem Statement
-Convert a single-page HTML analytics portal (cost.html) into a full-stack application using React + FastAPI, storing data in Excel (.xlsx) on the server with manual update capability via file upload.
+Create a case management dashboard using the uploaded Excel file (Case Management Report), referencing a provided dashboard image. Show every aspect in the report that is possible. The Excel will be managed manually (upload when updates needed).
 
 ## Architecture
-- **Frontend**: React 19 + Tailwind CSS + Recharts + Lucide React
-- **Backend**: FastAPI + openpyxl (Excel read/write)
-- **Data Storage**: Excel file (.xlsx) on server at `/app/backend/data/ZALR.xlsx`
-- **No Authentication**: Open access portal
+- **Backend**: FastAPI (Python) - Excel-based data processing with in-memory caching
+- **Frontend**: React.js with Recharts, Tailwind CSS, Radix UI
+- **Data Source**: Excel files (ZALR.xlsx, Sales.xlsx, CaseManagement.xlsx)
+- **No Database Required**: All data is read from Excel files
 
-## User Personas
-- **Operations Manager**: Views cost dashboards, filters by plant/WBS/project type
-- **Data Admin**: Uploads updated Excel files to refresh dashboards
-- **Internal Staff**: Views landing page and report modules
+## Core Requirements (Static)
+1. Case Management Dashboard with KPIs, charts, and detailed table
+2. Filters: Case Type, Status, Origin, Area, Sub Area, Owner, HOD, Team Leader, Project, Priority
+3. Toggle filters: Beyond/Within TAT, Exclusion/Inclusion, Above/Within 24 Hrs
+4. Manual Excel upload for data updates
+5. Existing ZALR and Sales dashboards maintained
 
-## Core Requirements
-1. Landing page with company branding, stats, and report module cards
-2. ZALR Cost Dashboard with 7 KPI cards, 7 chart types, filters, and WBS summary table
-3. Excel upload page with drag-and-drop file upload
-4. Data stored in .xlsx format on server
-5. Light theme with Swiss High-Contrast design
+## What's Been Implemented (Jan 14, 2026)
+- **Case Management API** (`case_api.py`): /api/cases/data, /api/cases/filters, /api/cases/table, /api/cases/upload, /api/cases/download
+- **Case Management Dashboard** (`CaseManagement.js`): Full dashboard with:
+  - 6 KPI cards (Total, Open, Closed, Escalated, HNI, Legal)
+  - Case Type pie chart
+  - Status breakdown horizontal bars
+  - Case Origin horizontal bar chart
+  - Cases by Case Owner bar chart
+  - Area/Sub Area summary table
+  - Project breakdown
+  - Priority pie chart
+  - Team Leader bar chart
+  - Response Time / Resolution Time / Applicability breakdown
+  - Detailed case table with pagination, search, and 14 columns
+- **10 sidebar filter dropdowns** and **6 header toggle pills**
+- **Excel upload/download** functionality
+- **Data caching** for 92K+ row performance
+- **Landing page** updated with Case Management as a live module
+- **Fonts**: Chivo + IBM Plex Sans for enterprise look
 
-## What's Been Implemented (Jan 2026)
-- [x] Landing page with hero section, stats bar, 8 report module cards
-- [x] ZALR Cost Dashboard with full sidebar filters (Plant, WBS, PO, Year, Month, Project Type)
-- [x] 7 KPI cards (WBS Count, Budget, PO Count, Ordered, Delivered, Invoiced, Still to Deliver)
-- [x] 7 chart components (Project Compare, Pending Donut, Monthly Trend, Plant Bar, WBS Pie, Yearly Stacked, WBS Grouped Bar)
-- [x] Plant Budget Utilisation gauge bars
-- [x] WBS Summary table (top 25 by ordered value)
-- [x] Excel upload with drag-and-drop + download current data
-- [x] Coming Soon modal for inactive modules
-- [x] Backend APIs: /api/data, /api/stats, /api/modules, /api/filters, /api/upload, /api/download
-- [x] Seed data from original HTML (8,146 rows, 313 WBS elements, 17 plants)
+## Testing Status
+- Backend: 100% (14/14 tests passed)
+- Frontend: 100% (all features working)
 
 ## Prioritized Backlog
-### P0 (Critical)
-- None remaining
-
-### P1 (Important)
-- Project Progress Report module (with sample data)
-- Budget Variance Report module (with sample data)
-
-### P2 (Nice to Have)
-- Data export to PDF
-- Dashboard print-friendly mode
-- Filter URL persistence (shareable filtered views)
-- Historical file version tracking
+- P0: None (MVP complete)
+- P1: Date range filtering, Excel template download
+- P2: Export filtered data to Excel, email reports
+- P3: Real-time data sync, user authentication
 
 ## Next Tasks
-1. Build Project Progress Report module with sample data
-2. Build Budget Variance Report module with sample data
-3. Add CSV export from dashboard
+- Add date range filter for Date/Time Opened
+- Add ability to export filtered results to Excel
+- Add more chart types (trend over time)
