@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LandingPage from "@/components/LandingPage";
 import Dashboard from "@/components/Dashboard";
 import UploadPage from "@/components/UploadPage";
+import SalesDashboard from "@/components/SalesDashboard";
 
 function App() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -15,6 +16,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<Dashboard key={refreshKey} />} />
+          <Route path="/sales" element={<SalesDashboard />} />
           <Route path="/upload" element={<UploadPage onDataUpdated={onDataUpdated} />} />
         </Routes>
       </BrowserRouter>

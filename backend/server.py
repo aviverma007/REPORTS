@@ -285,7 +285,7 @@ async def get_modules():
         {"id": "vendor", "title": "Vendor Performance", "description": "Supplier scorecard with delivery timelines, quality metrics, and spend analysis.", "icon": "factory", "status": "coming_soon"},
         {"id": "budget-variance", "title": "Budget Variance Report", "description": "Actuals vs budget comparison with variance flags, trend analysis, and departmental drill-down.", "icon": "trending-up", "status": "coming_soon"},
         {"id": "hr", "title": "HR Analytics", "description": "Headcount, payroll cost tracking, departmental staffing levels, and workforce distribution.", "icon": "users", "status": "coming_soon"},
-        {"id": "sales", "title": "Sales Dashboard", "description": "Unit booking status, collection tracking, broker performance, and project-wise sales velocity.", "icon": "building-2", "status": "coming_soon"},
+        {"id": "sales", "title": "Sales Dashboard", "description": "Unit booking status, collection tracking, payment summary, ageing report, and project-wise sales velocity.", "icon": "building-2", "status": "live"},
         {"id": "finance", "title": "Finance MIS Report", "description": "Receivables, payables, cash flow projections, and consolidated P&L tracking.", "icon": "receipt", "status": "coming_soon"},
         {"id": "audit", "title": "Audit & Compliance", "description": "Document audit trails, compliance checklists, and regulatory flags.", "icon": "search", "status": "coming_soon"},
     ]
@@ -362,7 +362,9 @@ async def download_current():
     )
 
 
+from sales_api import sales_router
 app.include_router(api_router)
+app.include_router(sales_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -375,4 +377,6 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     ensure_seed_data()
+    from sales_api import ensure_sales_data
+    ensure_sales_data()
     logger.info("SmartWorld Analytics API started")

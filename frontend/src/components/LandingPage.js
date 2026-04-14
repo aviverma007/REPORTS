@@ -35,7 +35,8 @@ export default function LandingPage() {
 
   const handleModuleClick = (mod) => {
     if (mod.status === "live") {
-      nav("/dashboard");
+      if (mod.id === "sales") nav("/sales");
+      else nav("/dashboard");
     } else {
       setComingSoonModule(mod);
     }
