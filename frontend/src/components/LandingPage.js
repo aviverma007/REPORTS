@@ -6,7 +6,7 @@ import {
   Building2, Receipt, Search, ArrowRight, ChevronDown, Upload, Check
 } from "lucide-react";
 
-const API = `${process.env.REACT_APP_BACKEND_URL || "http://localhost:8001"}/api`;
+// Data loaded from Excel via DataContext - no backend needed
 
 const ICON_MAP = {
   wallet: Wallet, "bar-chart-3": BarChart3, factory: Factory,

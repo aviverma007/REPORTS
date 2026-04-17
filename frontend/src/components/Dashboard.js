@@ -1,9 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import {
-  ArrowLeft, Upload, LayoutGrid, RefreshCw, Building, Layers, FileText, Calendar, CalendarDays
-} from "lucide-react";
+import { useData } from "@/context/DataContext";
+import { adaptKPI, adaptMonthly, adaptPlant, adaptWbsBudget, adaptYearly, adaptWbsTable } from "@/context/adaptData";
 import KPIRow from "./dashboard/KPIRow";
 import ProjectCompare from "./dashboard/ProjectCompare";
 import PendingDonut from "./dashboard/PendingDonut";
@@ -12,285 +10,238 @@ import PlantBar from "./dashboard/PlantBar";
 import WBSPie from "./dashboard/WBSPie";
 import YearlyStacked from "./dashboard/YearlyStacked";
 import WBSBar from "./dashboard/WBSBar";
-import PlantGauge from "./dashboard/PlantGauge";
 import WBSTable from "./dashboard/WBSTable";
-
-const API = `${process.env.REACT_APP_BACKEND_URL || "http://localhost:8001"}/api`;
+import { ArrowLeft, RefreshCw, Building, Layers, FileText, Calendar } from "lucide-react";
 
 export default function Dashboard() {
   const nav = useNavigate();
-  const [data, setData] = useState(null);
-  const [filters, setFilters] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data: baseData, loading, error, filter } = useData();
 
-  // Filter state — arrays for multi-select
-  const [plant, setPlant] = useState([]);
-  const [wbs, setWbs] = useState([]);
-  const [po, setPo] = useState([]);
-  const [projType, setProjType] = useState("");
-  const [year, setYear] = useState([]);
-  const [month, setMonth] = useState([]);
+  const [projType, setProjType] = useState("all");
+  const [plant,    setPlant]    = useState("");
+  const [year,     setYear]     = useState("");
+  const [workType, setWorkType] = useState("");
+  const [docType,  setDocType]  = useState("");
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const params = {};
-      if (plant.length) params.plant = plant.join(',');
-      if (wbs.length) params.wbs = wbs.join(',');
-      if (po.length) params.po = po.join(',');
-      if (projType) params.proj_type = projType;
-      if (year.length) params.year = year.join(',');
-      if (month.length) params.month = month.join(',');
-      const res = await axios.get(`${API}/data`, { params });
-      setData(res.data);
-    } catch (e) {
-      console.error("Failed to fetch data", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchFilters = async () => {
-    try {
-      const res = await axios.get(`${API}/filters`);
-      setFilters(res.data);
-    } catch (e) {
-      console.error("Failed to fetch filters", e);
-    }
-  };
-
-  useEffect(() => { fetchFilters(); }, []);
-  useEffect(() => { fetchData(); }, [plant, wbs, po, projType, year, month]); // eslint-disable-line
+  const data = useMemo(() => {
+    if (!baseData) return null;
+    const t = projType === "all" ? "" : projType;
+    return filter({ type: t, plant, year, workType, docType });
+  }, [baseData, projType, plant, year, workType, docType, filter]);
 
   const resetFilters = () => {
-    setPlant([]); setWbs([]); setPo([]); setProjType(""); setYear([]); setMonth([]);
+    setProjType("all"); setPlant(""); setYear(""); setWorkType(""); setDocType("");
   };
 
-  const MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-  return (
-    <div className="min-h-screen bg-[#FAFAFA] flex" data-testid="dashboard-page">
-      {/* Sidebar */}
-      <aside className="w-60 border-r border-zinc-200 bg-white flex-shrink-0 flex flex-col sticky top-0 h-screen overflow-y-auto" data-testid="dashboard-sidebar">
-        <div className="p-4 border-b border-zinc-200">
-          <div className="w-9 h-9 bg-zinc-950 text-white flex items-center justify-center text-base font-bold mb-2" style={{ fontFamily: 'var(--font-heading)' }}>Z</div>
-          <div className="text-sm font-bold tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>ZALR Dashboard</div>
-          <div className="text-[9px] text-zinc-400 tracking-[0.14em] uppercase">Cost Analytics</div>
-        </div>
-
-        {/* Project Type Toggle */}
-        <div className="px-3 pt-4">
-          <div className="text-[8px] font-bold tracking-[0.18em] uppercase text-zinc-400 mb-2 px-1">Project Type</div>
-          <div className="flex gap-1">
-            {[
-              { val: "", label: "ALL", cls: "bg-zinc-100 text-zinc-600 border-zinc-200 hover:bg-zinc-200" },
-              { val: "Project", label: "PROJECT", cls: "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100" },
-              { val: "Non-Project", label: "NON-PROJ", cls: "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100" }
-            ].map(btn => (
-              <button
-                key={btn.val}
-                data-testid={`filter-proj-${btn.val || 'all'}`}
-                className={`flex-1 py-1.5 text-[9px] font-bold tracking-[0.05em] uppercase border transition-all ${
-                  projType === btn.val ? "ring-1 ring-zinc-950 ring-offset-1" : ""
-                } ${btn.cls}`}
-                onClick={() => setProjType(btn.val)}
-              >
-                {btn.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="px-3 pt-4 flex-1">
-          <div className="text-[8px] font-bold tracking-[0.18em] uppercase text-zinc-400 mb-3 px-1">Filters</div>
-
-          <MultiSelect icon={Building} label="Plant" selected={plant} onChange={setPlant} testId="filter-plant"
-            options={(filters?.plants || []).map(p => ({ value: p.value, label: p.label }))} />
-
-          <MultiSelect icon={Layers} label="WBS Element" selected={wbs} onChange={setWbs} testId="filter-wbs"
-            options={(filters?.wbs_elements || []).map(w => ({ value: w.value, label: w.label }))} />
-
-          <MultiSelect icon={FileText} label="Purchasing Document" selected={po} onChange={setPo} testId="filter-po"
-            options={(filters?.purchasing_documents || []).map(p => ({ value: p, label: p }))} />
-
-          <MultiSelect icon={Calendar} label="Year" selected={year} onChange={setYear} testId="filter-year"
-            options={(filters?.years || []).map(y => ({ value: y, label: y }))} />
-
-          <MultiSelect icon={CalendarDays} label="Month" selected={month} onChange={setMonth} testId="filter-month"
-            options={MONTHS.slice(1).map((m, i) => ({ value: String(i + 1), label: m }))} />
-
-          <button
-            data-testid="filter-reset-btn"
-            className="w-full mt-3 py-2 text-[10px] font-semibold tracking-[0.08em] uppercase border border-zinc-200 text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 transition-colors flex items-center justify-center gap-2"
-            onClick={resetFilters}
-          >
-            <RefreshCw className="w-3 h-3" /> Reset All Filters
-          </button>
-        </div>
-
-        {/* Sidebar Stats */}
-        {data && (
-          <div className="mx-3 mb-3 p-3 bg-zinc-50 border border-zinc-200 text-[10px]" data-testid="sidebar-stats">
-            {[
-              { label: "Filtered Rows", val: data.row_count?.toLocaleString() },
-              { label: "Unique WBS", val: data.kpi?.wbs_count },
-              { label: "Unique POs", val: data.kpi?.po_count },
-              { label: "Project Rows", val: data.proj_count?.toLocaleString() },
-              { label: "Non-Project Rows", val: data.non_count?.toLocaleString() },
-            ].map(s => (
-              <div key={s.label} className="flex justify-between py-1">
-                <span className="text-zinc-400">{s.label}</span>
-                <span className="font-bold text-zinc-700">{s.val}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </aside>
-
-      {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="h-14 flex-shrink-0 border-b border-zinc-200 bg-white flex items-center justify-between px-5 sticky top-0 z-30" data-testid="dashboard-header">
-          <div className="flex items-center gap-4">
-            <div>
-              <div className="text-base font-bold tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>COST DASHBOARD</div>
-              <div className="text-[10px] text-zinc-400 tracking-wide">ZALR — Procurement & Budget Analytics</div>
-            </div>
-            <div className="flex gap-2 ml-4">
-              <span className="inline-flex items-center gap-1.5 text-[9px] font-bold px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-600">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> PROJECT (RE/)
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-[9px] font-bold px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-600">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> NON-PROJECT (HO/)
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[9px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 bg-zinc-100 border border-zinc-200 text-zinc-500" data-testid="header-record-count">
-              {data?.row_count?.toLocaleString() || '—'} records
-            </span>
-            <button data-testid="header-upload-btn" className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-900 transition-colors tracking-wide uppercase font-medium px-3 py-1.5 border border-zinc-200 hover:border-zinc-400" onClick={() => nav("/upload")}>
-              <Upload className="w-3.5 h-3.5" /> Update Excel
-            </button>
-            <button data-testid="header-back-btn" className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-900 transition-colors tracking-wide uppercase font-medium px-3 py-1.5 border border-zinc-200 hover:border-zinc-400" onClick={() => nav("/")}>
-              <ArrowLeft className="w-3.5 h-3.5" /> Portal
-            </button>
-          </div>
-        </header>
-
-        {/* Canvas */}
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4" data-testid="dashboard-canvas">
-          {loading ? (
-            <div className="flex-1 flex items-center justify-center" data-testid="dashboard-loader">
-              <div className="text-center">
-                <div className="w-10 h-10 border-2 border-zinc-200 border-t-zinc-600 rounded-full animate-spin mx-auto mb-3"></div>
-                <div className="text-xs text-zinc-400">Loading dashboard...</div>
-              </div>
-            </div>
-          ) : data ? (
-            <>
-              <KPIRow kpi={data.kpi} />
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-                <div className="lg:col-span-3"><ProjectCompare kpi={data.kpi} /></div>
-                <div className="lg:col-span-2"><PendingDonut kpi={data.kpi} /></div>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <MonthlyTrend data={data.monthly_trend} />
-                <PlantBar data={data.plant_data} />
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <WBSPie data={data.wbs_budget_top} />
-                <YearlyStacked data={data.yearly_data} />
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-                <div className="lg:col-span-3"><WBSBar data={data.wbs_ordered_top} budgets={data.wbs_budget_top} /></div>
-                <div className="lg:col-span-2"><PlantGauge data={data.plant_utilization} /></div>
-              </div>
-              <WBSTable data={data.wbs_table} />
-            </>
-          ) : null}
-        </div>
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#eef1f8]">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+        <div className="text-sm font-semibold text-slate-600">Loading Excel data...</div>
+        <div className="text-xs text-slate-400 mt-1">Reading ZALR.xlsx</div>
       </div>
     </div>
   );
-}
 
-function MultiSelect({ icon: Icon, label, selected, onChange, options, testId }) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  if (error) return (
+    <div className="min-h-screen flex items-center justify-center bg-[#eef1f8]">
+      <div className="bg-white border border-red-200 rounded-2xl p-8 max-w-md text-center shadow-lg">
+        <div className="text-4xl mb-3">⚠️</div>
+        <div className="text-lg font-bold text-red-600 mb-2">Excel Not Found</div>
+        <div className="text-sm text-slate-500 mb-4">{error}</div>
+        <div className="text-xs bg-slate-50 border rounded-lg p-3 text-left font-mono text-slate-600">
+          Place your Excel at:<br/><strong>frontend/public/data/ZALR.xlsx</strong>
+        </div>
+        <button onClick={() => nav("/")} className="mt-4 px-5 py-2 bg-slate-900 text-white text-xs rounded-lg">← Back</button>
+      </div>
+    </div>
+  );
 
-  const toggle = (val) => {
-    if (selected.includes(val)) onChange(selected.filter(v => v !== val));
-    else onChange([...selected, val]);
-  };
+  if (!data) return null;
 
-  const filtered = search
-    ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
-    : options;
+  // Adapt data shape for existing chart components
+  const kpi       = adaptKPI(data.kpi);
+  const monthly   = adaptMonthly(data.monthly);
+  const plantData = adaptPlant(data.plantData);
+  const wbsBudget = adaptWbsBudget(data.wbsBudget);
+  const yearly    = adaptYearly(data.yearly);
+  const wbsTable  = adaptWbsTable(data.wbsTable);
+  const { filters, rowCount, projCount, nonCount } = data;
 
   return (
-    <div className="mb-3 relative">
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <Icon className="w-3 h-3 text-zinc-400" />
-        <span className="text-[9px] font-semibold tracking-[0.1em] uppercase text-zinc-400">{label}</span>
+    <div className="min-h-screen bg-[#eef1f8] flex flex-col" data-testid="dashboard-page">
+
+      {/* Top Nav */}
+      <div className="h-14 bg-gradient-to-r from-[#0d1b3e] via-[#162553] to-[#1e3370] flex items-center px-6 gap-4 sticky top-0 z-50 shadow-lg">
+        <button onClick={() => nav("/")} className="flex items-center gap-2 text-white/70 hover:text-white text-xs font-semibold border border-white/20 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-all">
+          <ArrowLeft className="w-3.5 h-3.5"/> Back to Portal
+        </button>
+        <div>
+          <div className="text-white font-bold text-sm">ZALR Cost Dashboard</div>
+          <div className="text-white/40 text-[10px]">SmartWorld Developers Analytics Suite</div>
+        </div>
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-white/50 text-[11px] bg-white/8 border border-white/15 px-3 py-1 rounded-full">
+            {rowCount?.toLocaleString()} Records
+          </span>
+          <button onClick={resetFilters} className="flex items-center gap-1.5 text-white/70 hover:text-white text-xs border border-white/20 px-3 py-1.5 rounded-lg hover:bg-white/10 transition-all">
+            <RefreshCw className="w-3 h-3"/> Reset
+          </button>
+        </div>
       </div>
-      <button
-        data-testid={testId}
-        onClick={() => setOpen(p => !p)}
-        className="w-full bg-zinc-50 border border-zinc-200 py-1.5 px-2 text-xs text-zinc-700 text-left transition-colors hover:border-zinc-400 flex items-center justify-between"
-      >
-        <span className="truncate">
-          {selected.length === 0
-            ? `All ${label}`
-            : selected.length === 1
-              ? (options.find(o => o.value === selected[0])?.label || selected[0])
-              : `${selected.length} selected`}
+
+      {/* Sub bar */}
+      <div className="bg-[#162553] flex items-center px-6 gap-3 h-11">
+        <div className="text-white font-extrabold text-sm tracking-widest uppercase">Cost Dashboard</div>
+        <span className="text-[11px] font-bold px-3 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/40">● PROJECT (RE/)</span>
+        <span className="text-[11px] font-bold px-3 py-0.5 rounded-full bg-green-500/20 text-green-300 border border-green-400/40">● NON-PROJECT (HO/)</span>
+        <span className="ml-auto text-white/40 text-[11px]">
+          {new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
         </span>
-        <svg className={`w-3 h-3 text-zinc-400 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`} viewBox="0 0 9 5"><path d="M0 0l4.5 5L9 0z" fill="currentColor" /></svg>
-      </button>
-      {selected.length > 0 && (
-        <button
-          className="absolute top-0 right-0 text-[8px] text-blue-500 hover:underline"
-          onClick={() => onChange([])}
-        >clear</button>
-      )}
-      {open && (
-        <>
-          <div className="fixed inset-0 z-20" onClick={() => { setOpen(false); setSearch(""); }} />
-          <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-zinc-200 shadow-lg max-h-56 overflow-hidden flex flex-col">
-            {options.length > 8 && (
-              <input
-                type="text"
-                placeholder="Search..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="border-b border-zinc-100 px-2 py-1.5 text-[11px] outline-none bg-zinc-50"
-                autoFocus
-              />
-            )}
-            <div className="overflow-y-auto flex-1">
-              {filtered.map(o => (
-                <label
-                  key={o.value}
-                  className="flex items-center gap-2 px-2 py-1 hover:bg-zinc-50 cursor-pointer text-[11px] text-zinc-700"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(o.value)}
-                    onChange={() => toggle(o.value)}
-                    className="w-3 h-3 rounded-sm accent-blue-600"
-                  />
-                  <span className="truncate">{o.label}</span>
-                </label>
+      </div>
+
+      <div className="flex flex-1" data-testid="dashboard-sidebar">
+        {/* Sidebar */}
+        <aside className="w-56 bg-white border-r border-slate-200 flex-shrink-0 sticky top-[92px] h-[calc(100vh-92px)] overflow-y-auto">
+          <div className="p-4 border-b border-slate-100">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-extrabold text-lg shadow-md mb-2">Z</div>
+            <div className="text-sm font-bold text-slate-800">ZALR Dashboard</div>
+            <div className="text-[9px] text-slate-400 tracking-widest uppercase font-semibold">Cost Analytics</div>
+          </div>
+
+          <div className="p-3 border-b border-slate-100">
+            <div className="text-[9px] font-bold text-slate-400 tracking-widest uppercase mb-2">Project Type</div>
+            <div className="flex gap-1.5">
+              {[["all","ALL"],["re","PROJECT"],["ho","NON-PROJ"]].map(([v,l])=>(
+                <button key={v} onClick={()=>setProjType(v)}
+                  className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${
+                    projType===v
+                      ? v==="all" ? "bg-slate-900 text-white border-slate-900"
+                      : v==="re"  ? "bg-blue-50 text-blue-800 border-blue-400"
+                      :              "bg-green-50 text-green-800 border-green-400"
+                      : "bg-slate-50 text-slate-500 border-slate-200"
+                  }`}>{l}
+                </button>
               ))}
-              {filtered.length === 0 && (
-                <div className="px-2 py-2 text-[10px] text-zinc-400">No results</div>
-              )}
             </div>
           </div>
-        </>
-      )}
+
+          <div className="p-3 space-y-2.5">
+            <div className="text-[9px] font-bold text-slate-400 tracking-widest uppercase">Filters</div>
+            {[
+              ["Plant",     plant,    setPlant,    filters.plants.map(p=>p),    Building],
+              ["Year",      year,     setYear,     filters.years.map(y=>String(y)), Calendar],
+              ["Work Type", workType, setWorkType, filters.workTypes,            Layers],
+              ["Doc Type",  docType,  setDocType,  filters.docTypes,             FileText],
+            ].map(([label,val,setter,opts,Icon])=>(
+              <div key={label}>
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-1 flex items-center gap-1">
+                  <Icon className="w-2.5 h-2.5"/>{label}
+                </div>
+                <select value={val} onChange={e=>setter(e.target.value)}
+                  className="w-full text-[11px] border border-slate-200 rounded-lg px-2 py-1.5 bg-slate-50 text-slate-700 focus:outline-none focus:border-blue-400">
+                  <option value="">All {label}s</option>
+                  {opts.map(o=><option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            ))}
+            <button onClick={resetFilters}
+              className="w-full py-2 rounded-lg border border-amber-400 bg-amber-50 text-amber-700 text-[11px] font-bold hover:bg-amber-100 transition-colors">
+              ↺ Reset All Filters
+            </button>
+          </div>
+
+          <div className="p-3 border-t border-slate-100">
+            <div className="text-[9px] font-bold text-slate-400 tracking-widest uppercase mb-2">Summary</div>
+            {[["Filtered Rows",rowCount?.toLocaleString()],["Unique WBS",kpi.wbs_count],["Unique POs",kpi.po_count?.toLocaleString()],["Project Rows",projCount?.toLocaleString()],["Non-Project",nonCount?.toLocaleString()]].map(([k,v])=>(
+              <div key={k} className="flex justify-between py-1.5 text-[11px] border-b border-slate-50 last:border-none">
+                <span className="text-slate-500">{k}</span>
+                <span className="font-bold text-amber-600 font-mono">{v}</span>
+              </div>
+            ))}
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <div className="flex-1 p-5 min-w-0 space-y-4">
+          <KPIRow kpi={kpi}/>
+
+          <div className="grid grid-cols-5 gap-4">
+            <div className="col-span-3 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start mb-3">
+                <div><p className="font-bold text-slate-800 text-sm">PROJECT vs NON-PROJECT Breakdown</p><p className="text-[11px] text-slate-400">Key metrics split by project type</p></div>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">COMPARISON</span>
+              </div>
+              <ProjectCompare kpi={kpi}/>
+            </div>
+            <div className="col-span-2 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start mb-3">
+                <div><p className="font-bold text-slate-800 text-sm">Still to Deliver vs Invoice</p><p className="text-[11px] text-slate-400">Pending commitment breakdown</p></div>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200">DONUT</span>
+              </div>
+              <PendingDonut kpi={kpi}/>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start mb-3">
+                <div><p className="font-bold text-slate-800 text-sm">Month-wise Ordered vs Delivered (GST)</p><p className="text-[11px] text-slate-400">Trend by Document Date</p></div>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-200">LINE</span>
+              </div>
+              <MonthlyTrend data={monthly}/>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start mb-3">
+                <div><p className="font-bold text-slate-800 text-sm">Plant-wise Ordered vs Delivered</p><p className="text-[11px] text-slate-400">GST values per plant</p></div>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-200">BAR</span>
+              </div>
+              <PlantBar data={plantData}/>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start mb-3">
+                <div><p className="font-bold text-slate-800 text-sm">Top WBS Budget Allocation</p><p className="text-[11px] text-slate-400">Budget distribution by WBS</p></div>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">PIE</span>
+              </div>
+              <WBSPie data={wbsBudget}/>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start mb-3">
+                <div><p className="font-bold text-slate-800 text-sm">Year-wise Cumulative Values</p><p className="text-[11px] text-slate-400">Ordered · Delivered · Invoiced</p></div>
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-50 text-red-700 border border-red-200">STACKED</span>
+              </div>
+              <YearlyStacked data={yearly}/>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-3">
+              <div><p className="font-bold text-slate-800 text-sm">WBS Budget Utilisation — Top 12</p><p className="text-[11px] text-slate-400">Spend as % of budget per WBS</p></div>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">PROGRESS</span>
+            </div>
+            <WBSBar data={wbsTable} budgets={wbsBudget}/>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-3">
+              <div><p className="font-bold text-slate-800 text-sm">WBS Detail Table — Top 25</p><p className="text-[11px] text-slate-400">Ordered, Delivered, Invoiced, Still to Deliver</p></div>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">TABLE</span>
+            </div>
+            <WBSTable data={wbsTable}/>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-[#0d1b3e] px-6 py-2 flex items-center gap-5">
+        <div className="flex items-center gap-1.5 text-[10px] text-white/40 uppercase tracking-wider">
+          <div className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_4px_#4ade80] animate-pulse"></div>Live Data
+        </div>
+        <div className="text-[10px] text-white/30 uppercase tracking-wider">SmartWorld BI · ZALR Procurement</div>
+        <div className="ml-auto text-[10px] text-white/30">{new Date().toLocaleTimeString("en-GB",{hour12:false})}</div>
+      </div>
     </div>
   );
 }
