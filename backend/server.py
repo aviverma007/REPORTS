@@ -101,10 +101,19 @@ def read_zalr_excel():
                     pass
 
             ordered_gst = safe_num(d.get('Ordered with GST'))
-            invoiced = safe_num(d.get('Invoiced Value'))
-            still_del = safe_num(d.get('Still to be Delivered Value'))
-            actual = safe_num(d.get('Actual PO Value'))
-            still_inv = max(0, ordered_gst - invoiced)
+            invoiced = safe_num(d.get('Invoiced Value') or d.get('Invoiced with GST') or 0)
+            still_del = safe_num(d.get('Still to be Delivered Value') or d.get('Still to be Delivered with GST') or 0)
+            # Support multiple column name formats for delivered
+            actual = safe_num(
+                d.get('Delivered with GST') or
+                d.get('Actual PO Value') or
+                d.get('Total Actual') or 0
+            )
+            still_inv = safe_num(
+                d.get('Still to be Invoiced Value') or
+                d.get('Still to be Invoiced with GST') or
+                max(0, ordered_gst - invoiced)
+            )
 
             wbs_key = d.get('WBS', '') or ''
 
@@ -114,7 +123,7 @@ def read_zalr_excel():
                 'Plant': str(d.get('Plant_WBS', '') or ''),
                 'Plant Name': d.get('Plant Name', ''),
                 'Purchasing Document': d.get('Purchasing Document', ''),
-                'Project/Non-Project': d.get('Project/Non-Project', ''),
+                'Project/Non-Project': ('Project' if str(d.get('Project/Non-Project', d.get('PROJECT/NON-PROJECT', ''))).upper().startswith('PROJECT') and not str(d.get('Project/Non-Project', d.get('PROJECT/NON-PROJECT', ''))).upper().startswith('NON') else 'Non-Project'),
                 'Ordered with GST': ordered_gst,
                 'Delivered with GST': actual,
                 'Invoiced with GST': invoiced,
