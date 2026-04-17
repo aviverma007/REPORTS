@@ -11,7 +11,7 @@ from datetime import datetime
 import os
 
 class SmartWorldAPITester:
-    def __init__(self, base_url="https://da603a51-e989-4398-913b-25e02bbc787f.preview.emergentagent.com"):
+    def __init__(self, base_url="http://localhost:8001"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0

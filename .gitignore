@@ -135,3 +135,14 @@ credentials.json
 *.pem
 *.key
 .credentials
+
+# Dependencies
+frontend/node_modules/
+frontend/package-lock.json
+
+# Environment
+backend/.env
+frontend/.env
+
+# Build
+frontend/build/
