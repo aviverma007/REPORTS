@@ -15,7 +15,7 @@ import WBSBar from "./dashboard/WBSBar";
 import PlantGauge from "./dashboard/PlantGauge";
 import WBSTable from "./dashboard/WBSTable";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${process.env.REACT_APP_BACKEND_URL || "http://localhost:8001"}/api`;
 
 export default function Dashboard() {
   const nav = useNavigate();

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Upload, ArrowLeft, FileSpreadsheet, CheckCircle2, AlertCircle, Download } from "lucide-react";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = `${process.env.REACT_APP_BACKEND_URL || "http://localhost:8001"}/api`;
 
 export default function UploadPage({ onDataUpdated }) {
   const nav = useNavigate();

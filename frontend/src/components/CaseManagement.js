@@ -9,7 +9,7 @@ import {
   ArrowUpDown, RotateCcw
 } from "lucide-react";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api/cases`;
+const API = `${process.env.REACT_APP_BACKEND_URL || "http://localhost:8001"}/api/cases`;
 
 const COLORS = ["#004DE6", "#16A34A", "#DC2626", "#D97706", "#8B5CF6", "#0EA5E9", "#EC4899", "#14B8A6", "#F97316", "#6366F1", "#A855F7"];
 

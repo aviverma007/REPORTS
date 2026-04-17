@@ -9,7 +9,7 @@ import SalesTab from "./sales/SalesTab";
 import PaymentTab from "./sales/PaymentTab";
 import AgeingTab from "./sales/AgeingTab";
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api/sales`;
+const API = `${process.env.REACT_APP_BACKEND_URL || "http://localhost:8001"}/api/sales`;
 
 const TABS = [
   { id: "sales", label: "Sales Dashboard", icon: Building },
