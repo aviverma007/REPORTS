@@ -142,7 +142,6 @@ frontend/package-lock.json
 
 # Environment
 backend/.env
-frontend/.env
 
 # Build
 frontend/build/
