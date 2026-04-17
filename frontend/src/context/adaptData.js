@@ -1,17 +1,19 @@
-// Adapts DataContext shape -> component shape expected by existing chart components
+// Adapts DataContext shape -> shape expected by existing chart components
 
 export function adaptKPI(kpi) {
   if (!kpi) return null;
   return {
-    wbs_count:  kpi.wbsCount,
-    wbs_proj:   kpi.wbsProj,
-    wbs_non:    kpi.wbsNon,
-    budget:     kpi.budget,
+    // KPIRow fields
+    wbs_count:   kpi.wbsCount,
+    wbs_proj:    kpi.wbsProj,
+    wbs_non:     kpi.wbsNon,
+    budget:      kpi.budget,
     budget_proj: kpi.budgetProj,
     budget_non:  kpi.budgetNon,
-    po_count:   kpi.poCount,
-    po_proj:    kpi.poProj,
-    po_non:     kpi.poNon,
+    po_count:    kpi.poCount,
+    po_proj:     kpi.poProj,
+    po_non:      kpi.poNon,
+    // total / proj / non_proj nested objects for charts
     total: {
       ordered:          kpi.ordGst,
       delivered:        kpi.delGst,
@@ -49,9 +51,9 @@ export function adaptMonthly(monthly) {
 
 export function adaptPlant(plantData) {
   return (plantData || []).map(p => ({
-    plant:           p.plant,
-    ordered:         p.ordered,
-    delivered:       p.delivered,
+    plant:            p.plant,
+    ordered:          p.ordered,
+    delivered:        p.delivered,
     still_to_deliver: p.stillDeliver,
   }));
 }
@@ -66,10 +68,10 @@ export function adaptWbsBudget(wbsBudget) {
 
 export function adaptYearly(yearly) {
   return (yearly || []).map(y => ({
-    year:            y.year,
-    ordered:         y.ordered,
-    delivered:       y.delivered,
-    invoiced:        y.invoiced,
+    year:             y.year,
+    ordered:          y.ordered,
+    delivered:        y.delivered,
+    invoiced:         y.invoiced,
     still_to_deliver: y.stillDeliver,
   }));
 }
